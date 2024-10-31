@@ -1,0 +1,32 @@
+#!/bin/bash
+
+# Limpa todas as regras existentes
+iptables -F
+iptables -X
+
+# Define a política padrão para bloquear todo o tráfego
+iptables -P INPUT DROP
+iptables -P FORWARD DROP
+iptables -P OUTPUT DROP
+
+# Permite tráfego de loopback (necessário para o funcionamento do sistema)
+iptables -A INPUT -i lo -j ACCEPT
+iptables -A OUTPUT -o lo -j ACCEPT
+
+# Permite conexões já estabelecidas e relacionadas
+iptables -A INPUT -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+iptables -A OUTPUT -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+
+# Permite tráfego de saída específico (Exemplo: HTTP e HTTPS)
+iptables -A OUTPUT -p tcp --dport 80 -j ACCEPT   # Porta HTTP
+iptables -A OUTPUT -p tcp --dport 443 -j ACCEPT  # Porta HTTPS
+
+# Permite entrada específica (Exemplo: Porta 22 para SSH)
+iptables -A INPUT -p tcp --dport 22 -m conntrack --ctstate NEW -j ACCEPT
+
+# Log para monitoramento (opcional)
+iptables -A INPUT -j LOG --log-prefix "INPUT DROP: "
+iptables -A OUTPUT -j LOG --log-prefix "OUTPUT DROP: "
+
+# Salvar as regras para aplicar em reinicializações (depende do sistema)
+# Exemplo: no Ubuntu/Debian use `iptables-save > /etc/iptables/rules.v4`
